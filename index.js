@@ -25,7 +25,7 @@ app.use(async function(ctx) {
     ctx.request.body.alerts.forEach(alert => {
       if (alert.annotations && (alert.annotations.summary || alert.annotations.description)) {
         data.embeds.push({
-          title: alert.annotations.summary,
+          title: '[' + alert.status.toUpperCase() + '] ' + alert.annotations.summary,
           description: alert.annotations.description,
           color: alert.status === 'resolved' ? 0x00c853 : 0xd50000,
         });
