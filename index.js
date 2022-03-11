@@ -7,16 +7,17 @@ const axios = require('axios');
 
 const port = process.env.PORT || 5001;
 const hook = process.env.DISCORD_WEBHOOK;
-const hookRegExp = new RegExp('https://discord(?:app)?.com/api/webhooks/[0-9]{18}/[a-zA-Z0-9_-]+')
-const colors = {firing: 0xd50000, resolved: 0x00c853}
+const hookRegExp = new RegExp('https://discord(?:app)?.com/api/webhooks/[0-9]{18}/[a-zA-Z0-9_-]+');
+const colors = {firing: 0xd50000, resolved: 0x00c853};
+const maxEmbedsLength = 10;
 
 async function handleIndex(ctx) {
   if (ctx.request.body && Array.isArray(ctx.request.body.alerts)) {
-    const data = {embeds: []};
+    const embeds = [];
 
     ctx.request.body.alerts.forEach(alert => {
       if (alert.annotations && (alert.annotations.summary || alert.annotations.description)) {
-        data.embeds.push({
+        embeds.push({
           title: alert.annotations.summary,
           description: alert.annotations.description,
           color: alert.status === 'resolved' ? colors.resolved : colors.firing,
@@ -24,21 +25,27 @@ async function handleIndex(ctx) {
       }
     });
 
-    if (data.embeds.length) {
+    if (!embeds.length) {
+      ctx.status = 400;
+      console.warn('No data to write to embeds');
+      return;
+    }
+
+    let chunk = [];
+    while ((chunk = embeds.splice(0, maxEmbedsLength)) && chunk.length) {
       await axios.post(
         hook,
-        data,
+        {embeds: chunk},
       ).then(() => {
         ctx.status = 200;
-        console.log(data.embeds.length + ' alerts sent');
+        console.log(chunk.length + ' embeds sent');
       }).catch(err => {
         ctx.status = 500;
         console.error(err);
+        return;
       });
-    } else {
-      ctx.status = 400;
-      console.warn('No data to write to embeds');
     }
+
   } else {
     ctx.status = 400;
     console.error('Unexpected request from Alertmanager:', ctx.request.body);

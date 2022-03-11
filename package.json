@@ -3,7 +3,7 @@
   "author": "lidofinance",
   "license": "MIT",
   "main": "index.js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "dependencies": {
     "@koa/router": "^10.1.1",
     "axios": "^0.26.0",
